@@ -5,102 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Klickzähler</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f6f8;
-      color: #222;
-    }
-
-    .wrap {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-      margin-bottom: 16px;
-    }
-
-    h1, h2 {
-      margin-top: 0;
-    }
-
-    button {
-      width: 100%;
-      padding: 16px;
-      font-size: 18px;
-      border: 0;
-      border-radius: 12px;
-      background: #1565c0;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .stat {
-      background: #eef4ff;
-      border-radius: 12px;
-      padding: 12px;
-    }
-
-    .label {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 6px;
-    }
-
-    .value {
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .status {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #444;
-      min-height: 20px;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    th, td {
-      text-align: left;
-      padding: 10px 8px;
-      border-bottom: 1px solid #ddd;
-      vertical-align: top;
-    }
-
-    th {
-      background: #f8f8f8;
-    }
-
-    .muted {
-      color: #666;
-      font-size: 12px;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; background: #f4f6f8; color: #222; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 16px; }
+    h1, h2 { margin-top: 0; }
+    button { width: 100%; padding: 16px; font-size: 18px; border: 0; border-radius: 12px; background: #1565c0; color: white; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat { background: #eef4ff; border-radius: 12px; padding: 12px; }
+    .label { font-size: 13px; color: #555; margin-bottom: 6px; }
+    .value { font-size: 20px; font-weight: bold; }
+    .status { margin-top: 10px; font-size: 14px; color: #444; min-height: 20px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+    th { background: #f8f8f8; }
+    .muted { color: #666; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -152,7 +72,7 @@
   </div>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyXtn4s0oZTagm737NO5pk9X3JXZmnRYIulHliN5z_wU4thLRnkGlwDSUc5vQL-EmSh/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz0wTqcEpy_fVQDeXp5p3RWM4CJFnb-D32CGAiwLEgXOZDsJLeUdzaXGzLLzxebSNOr/exec';
 
     const clickBtn = document.getElementById('clickBtn');
     const statusEl = document.getElementById('status');
@@ -164,15 +84,6 @@
 
     function setStatus(text) {
       statusEl.textContent = text;
-    }
-
-    function buildUrl(action) {
-      const url = new URL(WEB_APP_URL);
-      url.searchParams.set('action', action);
-      url.searchParams.set('source', 'github-pages');
-      url.searchParams.set('ua', navigator.userAgent);
-      url.searchParams.set('_', Date.now().toString());
-      return url.toString();
     }
 
     function render(data) {
@@ -188,32 +99,71 @@
 
       clickTableEl.innerHTML = '';
 
+      if (!data.clicks || data.clicks.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="4">Noch keine Einträge vorhanden.</td>';
+        clickTableEl.appendChild(tr);
+        return;
+      }
+
       for (const item of data.clicks) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${item.id}</td>
           <td>${item.date}</td>
           <td>${item.time}</td>
-          <td>
-            ${item.source}
-            <div class="muted">${item.dateTime}</div>
-          </td>
+          <td>${item.source}<div class="muted">${item.dateTime}</div></td>
         `;
         clickTableEl.appendChild(tr);
       }
+    }
 
-      if (data.clicks.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="4">Noch keine Einträge vorhanden.</td>`;
-        clickTableEl.appendChild(tr);
-      }
+    function callApi(action) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        const script = document.createElement('script');
+        const url = new URL(WEB_APP_URL);
+
+        url.searchParams.set('action', action);
+        url.searchParams.set('source', 'github-pages');
+        url.searchParams.set('ua', navigator.userAgent);
+        url.searchParams.set('prefix', callbackName);
+        url.searchParams.set('_', Date.now().toString());
+
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(new Error('Zeitüberschreitung beim Laden'));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timeout);
+          if (window[callbackName]) {
+            delete window[callbackName];
+          }
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('Script konnte nicht geladen werden'));
+        };
+
+        script.src = url.toString();
+        document.body.appendChild(script);
+      });
     }
 
     async function loadData() {
       try {
         setStatus('Lade Daten ...');
-        const response = await fetch(buildUrl('list'));
-        const data = await response.json();
+        const data = await callApi('list');
         render(data);
         setStatus('Daten geladen');
       } catch (err) {
@@ -226,10 +176,7 @@
       try {
         clickBtn.disabled = true;
         setStatus('Speichere Klick ...');
-
-        const response = await fetch(buildUrl('add'));
-        const data = await response.json();
-
+        const data = await callApi('add');
         render(data);
         setStatus('Klick gespeichert');
       } catch (err) {
@@ -241,7 +188,6 @@
     }
 
     clickBtn.addEventListener('click', addClick);
-
     loadData();
   </script>
 </body>
